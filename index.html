@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ID Snap — Photo Cropper (1" × 1.26" @ 300dpi)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="22" height="22"><rect x="2" y="2" width="20" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 6h3M6 6v3M18 6h-3M18 6v3M6 18h3M6 18v-3M18 18h-3M18 18v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+    </span>
+    <span class="brand-name">ID Snap</span>
+  </div>
+  <p class="brand-spec">1" × 1.26" &nbsp;·&nbsp; 300 × 378 px &nbsp;·&nbsp; 300 DPI</p>
+</header>
+
+<main>
+
+  <!-- ============ UPLOAD SCREEN ============ -->
+  <section id="screen-upload" class="screen">
+    <div class="intro">
+      <h1>Crop ID photos, batch or one at a time.</h1>
+      <p>Drop in a photo. We find the face, frame it the way an ID photo should be framed, and export it at exactly 300 × 378&nbsp;px — 1&nbsp;inch by 1.26&nbsp;inch at 300&nbsp;DPI. Optionally swap the background for a flat color too.</p>
+    </div>
+
+    <div class="mode-toggle" role="tablist" aria-label="Upload mode">
+      <button class="mode-btn is-active" data-mode="single" role="tab" aria-selected="true">Single photo</button>
+      <button class="mode-btn" data-mode="bulk" role="tab" aria-selected="false">Bulk upload</button>
+    </div>
+
+    <label id="dropzone" class="dropzone" for="file-input" tabindex="0">
+      <span class="bracket bracket-tl" aria-hidden="true"></span>
+      <span class="bracket bracket-tr" aria-hidden="true"></span>
+      <span class="bracket bracket-bl" aria-hidden="true"></span>
+      <span class="bracket bracket-br" aria-hidden="true"></span>
+      <div class="dropzone-inner">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <p class="dz-title" id="dz-title">Click to upload, or drag a photo here</p>
+        <p class="dz-sub" id="dz-sub">JPG or PNG</p>
+      </div>
+    </label>
+    <input type="file" id="file-input" accept="image/png, image/jpeg, image/webp" hidden>
+    <p id="model-status" class="model-status">Loading face-detection model…</p>
+    <p id="seg-status" class="model-status">Loading background-removal model…</p>
+  </section>
+
+  <!-- ============ SINGLE EDITOR SCREEN ============ -->
+  <section id="screen-single" class="screen" hidden>
+    <button class="back-btn" id="single-back">&larr; Start over</button>
+    <div class="editor-layout">
+      <div class="cropper-pane">
+        <div id="cropper-container" class="cropper-container"></div>
+        <p class="hint">Drag inside the frame to move it. Drag a corner to resize — the shape stays locked to the ID ratio.</p>
+      </div>
+      <aside class="panel">
+        <h2>Output</h2>
+        <div class="preview-card">
+          <div id="preview-canvas-wrap" class="preview-canvas-wrap"></div>
+          <p class="preview-caption" id="preview-caption">300 × 378 px</p>
+        </div>
+
+        <div class="field">
+          <label for="format-select">Format</label>
+          <select id="format-select">
+            <option value="image/png">PNG (lossless)</option>
+            <option value="image/jpeg">JPG</option>
+          </select>
+        </div>
+
+        <div class="field field-row">
+          <label for="sharpen-toggle">Sharpen face detail</label>
+          <input type="checkbox" id="sharpen-toggle" checked>
+        </div>
+
+        <div class="field">
+          <label>Background</label>
+          <div id="bg-picker"></div>
+        </div>
+
+        <div class="field">
+          <label for="filename-input">File name</label>
+          <input type="text" id="filename-input" value="id-photo">
+        </div>
+
+        <button id="single-download" class="primary-btn">Download photo</button>
+        <p class="panel-note">Resolution metadata is embedded so the file reports 300 DPI in any image viewer. Background removal runs locally in your browser — nothing is uploaded anywhere.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ BULK SCREEN ============ -->
+  <section id="screen-bulk" class="screen" hidden>
+    <button class="back-btn" id="bulk-back">&larr; Start over</button>
+
+    <div class="bulk-toolbar">
+      <div>
+        <h2 id="bulk-count">0 photos</h2>
+        <p class="panel-note">Each one is auto-cropped to the face. Click any tile to fine-tune its frame.</p>
+      </div>
+      <div class="bulk-controls">
+        <div class="field field-inline">
+          <label for="bulk-format-select">Format</label>
+          <select id="bulk-format-select">
+            <option value="image/png">PNG</option>
+            <option value="image/jpeg">JPG</option>
+          </select>
+        </div>
+        <div class="field field-row field-inline">
+          <label for="bulk-sharpen-toggle">Sharpen</label>
+          <input type="checkbox" id="bulk-sharpen-toggle" checked>
+        </div>
+        <label class="add-more-btn" for="file-input-bulk">+ Add more</label>
+        <input type="file" id="file-input-bulk" accept="image/png, image/jpeg, image/webp" multiple hidden>
+        <button id="bulk-download" class="primary-btn">Download all (.zip)</button>
+      </div>
+    </div>
+
+    <div class="bulk-bg"><span>Background for all photos</span><div id="bulk-bg-picker"></div></div>
+    <div id="bulk-grid" class="bulk-grid"></div>
+  </section>
+
+</main>
+
+<!-- ============ FINE-TUNE MODAL (bulk) ============ -->
+<div id="modal-backdrop" class="modal-backdrop" hidden>
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Fine-tune crop</h3>
+      <button id="modal-close" class="icon-btn" aria-label="Close">&times;</button>
+    </div>
+    <div class="editor-layout modal-editor-layout">
+      <div class="cropper-pane">
+        <div id="modal-cropper-container" class="cropper-container"></div>
+        <p class="hint">Drag inside the frame to move it, or drag a corner to resize.</p>
+      </div>
+      <aside class="panel">
+        <h2>Preview</h2>
+        <div class="preview-card">
+          <div id="modal-preview-canvas-wrap" class="preview-canvas-wrap"></div>
+          <p class="preview-caption">300 × 378 px</p>
+        </div>
+        <div class="field"><label>Background for this photo</label><div id="modal-bg-picker"></div></div>
+        <button id="modal-reset" class="secondary-btn">Reset to auto-crop</button>
+        <button id="modal-done" class="primary-btn">Done</button>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p>Runs entirely in your browser — no photo is uploaded to a server. Face detection and background removal via CDN-hosted models; everything else is plain canvas.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/selfie_segmentation.js" crossorigin="anonymous"></script>
+<script src="cropper.js"></script>
+<script src="imaging.js"></script>
+<script src="segmentation.js"></script>
+<script src="bgpicker.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
